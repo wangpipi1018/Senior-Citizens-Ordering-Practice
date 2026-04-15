@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>樂齡數位餐廳 - 豪華版</title>
+    <style>
+        :root { --primary: #d35400; --secondary: #27ae60; --accent: #2980b9; --bg: #f4f7f6; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: var(--bg); margin: 0; padding-bottom: 110px; }
+
+        /* 頁首 */
+        .header { background: var(--primary); color: white; text-align: center; padding: 15px 10px; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        /* 橫向分頁標籤 */
+        .tab-bar {
+            background: white;
+            display: flex;
+            overflow-x: auto; /* 重要：練習左右滑動標籤 */
+            position: sticky;
+            top: 60px;
+            z-index: 999;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            -webkit-overflow-scrolling: touch;
+        }
+        .tab-bar::-webkit-scrollbar { display: none; } /* 隱藏捲軸讓畫面乾淨 */
+        
+        .tab-item {
+            flex: 0 0 auto; /* 不壓縮，確保可以左右滑 */
+            padding: 15px 25px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #666;
+            border-bottom: 4px solid transparent;
+        }
+        .tab-item.active {
+            color: var(--primary);
+            border-bottom: 4px solid var(--primary);
+            background-color: #fffaf0;
+        }
+
+        .container { padding: 15px; max-width: 600px; margin: auto; }
+        .menu-section { display: none; }
+        .menu-section.active { display: block; }
+
+        /* 餐點卡片 */
+        .menu-item { background: white; border-radius: 15px; padding: 15px; margin-bottom: 20px; border: 1px solid #eee; box-shadow: 0 3px 6px rgba(0,0,0,0.05); }
+        .item-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .item-name { font-size: 22px; font-weight: bold; color: #333; margin: 0; }
+        .item-price { color: #e74c3c; font-size: 20px; font-weight: bold; }
+        
+        .opt-box { margin-top: 12px; }
+        .opt-label { font-size: 14px; color: #888; margin-bottom: 5px; }
+        .opt-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .opt-btn { padding: 8px 12px; border: 1.5px solid #ddd; border-radius: 8px; background: white; font-size: 16px; min-width: 60px; text-align: center; }
+        .opt-btn.active { border-color: var(--primary); color: var(--primary); background: #fff5e6; font-weight: bold; }
+        
+        .add-btn { background: var(--accent); color: white; border: none; padding: 14px; border-radius: 10px; font-size: 18px; font-weight: bold; width: 100%; margin-top: 15px; cursor: pointer; }
+
+        /* 底部結帳欄 */
+        .footer { position: fixed; bottom: 0; width: 100%; background: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; z-index: 1000; }
+        .cart-info b { font-size: 24px; color: #f1c40f; }
+        .checkout-btn { background: var(--secondary); color: white; border: none; padding: 12px 25px; border-radius: 30px; font-size: 20px; font-weight: bold; }
+
+        /* 結帳明細 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-content { background: white; width: 88%; padding: 20px; border-radius: 20px; max-height: 80vh; overflow-y: auto; }
+        .order-line { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 17px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2 style="margin:0;">🏪 樂齡美味大連鎖</h2>
+    <small>左右滑動分類標籤，挑選喜歡的餐點</small>
+</div>
+
+<div class="tab-bar">
+    <div class="tab-item active" onclick="switchTab(event, 'rice')">🍚 飯食類</div>
+    <div class="tab-item" onclick="switchTab(event, 'noodle')">🍜 麵食類</div>
+    <div class="tab-item" onclick="switchTab(event, 'drink')">🥤 飲料類</div>
+    <div class="tab-item" onclick="switchTab(event, 'snack')">🥟 點心/湯</div>
+</div>
+
+<div class="container">
+    
+    <div id="rice" class="menu-section active">
+        <div class="menu-item" id="r1">
+            <div class="item-header"><p class="item-name">古早味排骨飯</p><span class="item-price">$120</span></div>
+            <div class="opt-box"><div class="opt-label">飯量：</div><div class="opt-row"><div class="opt-btn active" onclick="sel(this)">正常</div><div class="opt-btn" onclick="sel(this)">飯少</div></div></div>
+            <button class="add-btn" onclick="addCart('排骨飯','r1',120)">🛒 加入購物車</button>
+        </div>
+        <div class="menu-item" id="r2">
+            <div class="item-header"><p class="item-name">焢肉飯</p><span class="item-price">$110</span></div>
+            <div class="opt-box"><div class="opt-label">肉質：</div><div class="opt-row"><div class="opt-btn active" onclick="sel(this)">偏肥</div><div class="opt-btn" onclick="sel(this)">偏瘦</div></div></div>
+            <button class="add-btn" onclick="addCart('焢肉飯','r2',110)">🛒 加入購物車</button>
+        </div>
+        <div class="menu-item" id="r3"><p class="item-name">滑蛋蝦仁飯</p><p class="item-price">$140</p><button class="add-btn" onclick="addCart('蝦仁飯','r3',140)">🛒 加入購物車</button></div>
+        <div class="menu-item" id="r4"><p class="item-name">咖哩雞肉飯</p><p class="item-price">$130</p><button class="add-btn" onclick="addCart('咖哩飯','r4',130)">🛒 加入購物車</button></div>
+    </div>
+
+    <div id="noodle" class="menu-section">
+        <div class="menu-item" id="n1">
+            <div class="item-header"><p class="item-name">紅燒牛肉麵</p><span class="item-price">$170</span></div>
+            <div class="opt-box"><div class="opt-row"><div class="opt-btn active" onclick="sel(this)">細麵</div><div class="opt-btn" onclick="sel(this)">寬麵</div><div class="opt-btn" onclick="sel(this)">加辣</div></div></div>
+            <button class="add-btn" onclick="addCart('牛肉麵','n1',170)">🛒 加入購物車</button>
+        </div>
+        <div class="menu-item" id="n2"><p class="item-name">肉燥乾麵</p><p class="item-price">$60</p><button class="add-btn" onclick="addCart('肉燥麵','n2',60)">🛒 加入購物車</button></div>
+        <div class="menu-item" id="n3"><p class="item-name">餛飩麵</p><p class="item-price">$85</p><button class="add-btn" onclick="addCart('餛飩麵','n3',85)">🛒 加入購物車</button></div>
+        <div class="menu-item" id="n4"><p class="item-name">大滷麵</p><p class="item-price">$90</p><button class="add-btn" onclick="addCart('大滷麵','n4',90)">🛒 加入購物車</button></div>
+    </div>
+
+    <div id="drink" class="menu-section">
+        <div class="menu-item" id="d1">
+            <div class="item-header"><p class="item-name">珍珠奶茶</p><span class="item-price">$65</span></div>
+            <div class="opt-box"><div class="opt-label">甜度：</div><div class="opt-row"><div class="opt-btn active" onclick="sel(this)">半糖</div><div class="opt-btn" onclick="sel(this)">無糖</div><div class="opt-btn" onclick="sel(this)">去冰</div></div></div>
+            <button class="add-btn" onclick="addCart('珍珠奶茶','d1',65)">🛒 加入購物車</button>
+        </div>
+        <div class="menu-item" id="d2"><p class="item-name">無糖冷泡茶</p><p class="item-price">$45</p><button class="add-btn" onclick="addCart('冷泡茶','d2',45)">🛒 加入購物車</button></div>
+        <div class="menu-item" id="d3"><p class="item-name">檸檬冬瓜</p><p class="item-price">$50</p><button class="add-btn" onclick="addCart('檸檬冬瓜','d3',50)">🛒 加入購物車</button></div>
+        <div class="menu-item" id="d4"><p class="item-name">現榨柳橙汁</p><p class="item-price">$70</p><button class="add-btn" onclick="addCart('柳橙汁','d4',70)">🛒 加入購物車</button></div>
+    </div>
+
+    <div id="snack" class="menu-section">
+        <div class="menu-item" id="s1">
+            <div class="item-header"><p class="item-name">炸黃金豆腐</p><span class="item-price">$55</span></div>
+            <div class="opt-box"><div class="opt-row"><div class="opt-btn active" onclick="sel(this)">蒜泥</div><div class="opt-btn" onclick="sel(this)">甜辣醬</div></div></div>
+            <button class="add-btn" onclick="addCart('炸豆腐','s1',55)">🛒 加入購物車</button>
+        </div>
+        <div class="menu-item" id="s2"><p class="item-name">紅油抄手</p><p class="item-price">$85</p><button class="add-btn" onclick="addCart('抄手','s2',85)">🛒 加入購物車</button></div>
+        <div class="menu-item" id="s3"><p class="item-name">酸辣湯</p><p class="item-price">$45</p><button class="add-btn" onclick="addCart('酸辣湯','s3',45)">🛒 加入購物車</button></div>
+        <div class="menu-item" id="s4"><p class="item-name">燙青菜</p><p class="item-price">$40</p><button class="add-btn" onclick="addCart('燙青菜','s4',40)">🛒 加入購物車</button></div>
+    </div>
+
+</div>
+
+<div class="footer">
+    <div class="cart-info">已選 <span id="count">0</span> 項 | <b id="total">$0</b></div>
+    <button class="checkout-btn" onclick="showOrder()">去結帳</button>
+</div>
+
+<div class="modal" id="modal">
+    <div class="modal-content">
+        <h2 style="text-align:center; color:var(--secondary);">🛒 結帳清單明細</h2>
+        <div id="orderList"></div>
+        <p style="text-align:right; font-size:22px; font-weight:bold; margin-top:15px;">總額：<span id="finalPrice" style="color:red;">$0</span></p>
+        <div style="background:#fff9c4; border:2px dashed #f1c40f; padding:15px; border-radius:10px; text-align:center;">
+            <b style="color:#d35400;">📸 現在請練習截圖！<br>傳送到 LINE 群組分享成果。</b>
+        </div>
+        <button class="add-btn" style="background:#95a5a6;" onclick="location.reload()">重新開始練習</button>
+        <button class="add-btn" style="background:none; border:1px solid #ccc; color:#333;" onclick="document.getElementById('modal').style.display='none'">回菜單繼續買</button>
+    </div>
+</div>
+
+<script>
+    let cart = [];
+    let totalPrice = 0;
+
+    function switchTab(evt, cat) {
+        document.querySelectorAll('.menu-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+        document.getElementById(cat).classList.add('active');
+        evt.currentTarget.classList.add('active');
+        window.scrollTo(0,0);
+    }
+
+    function sel(btn) {
+        const parent = btn.parentElement;
+        // 如果是多選邏輯可以改 toggle，這裡先採單選模擬
+        parent.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    function addCart(name, id, price) {
+        const itemEl = document.getElementById(id);
+        const opts = itemEl.querySelectorAll('.opt-btn.active');
+        let specArr = [];
+        opts.forEach(o => specArr.push(o.innerText));
+        const spec = specArr.length > 0 ? `(${specArr.join('/')})` : '';
+
+        cart.push({ name: name + spec, price: price });
+        totalPrice += price;
+
+        document.getElementById('count').innerText = cart.length;
+        document.getElementById('total').innerText = '$' + totalPrice;
+        alert('【' + name + spec + '】已放入購物車');
+    }
+
+    function showOrder() {
+        if (cart.length === 0) return alert('籃子空空的喔！');
+        let html = "";
+        cart.forEach(i => {
+            html += `<div class="order-line"><span>• ${i.name}</span><span>$${i.price}</span></div>`;
+        });
+        document.getElementById('orderList').innerHTML = html;
+        document.getElementById('finalPrice').innerText = '$' + totalPrice;
+        document.getElementById('modal').style.display = 'flex';
+    }
+</script>
+
+</body>
+</html>
